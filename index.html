@@ -38,9 +38,40 @@
         button:hover { background-color: #3498db; }
         button:disabled { background-color: #aed6f1; cursor: not-allowed; }
 
-        .search-container { display: flex; gap: 10px; overflow: hidden; }
-        select { flex: 1 1 0; min-width: 0; padding: 12px; border: 2px solid #d6eaf8; border-radius: 6px; font-size: 1em; outline: none; }
-        select:focus { border-color: #5dade2; }
+        .search-container { 
+            display: flex; 
+            gap: 10px; 
+            position: relative; 
+            width: 100%; 
+            margin-bottom: 20px; 
+        }
+
+        #guessBtn {
+            background-color: #5dade2; 
+            color: white; 
+            border: none; 
+            padding: 0 20px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: bold;
+        }
+
+        #song-input {
+            width: 100%; padding: 12px; border: 2px solid #fce7f3; 
+            border-radius: 6px; box-sizing: border-box; font-size: 1em;
+        }
+
+        .autocomplete-items {
+            position: absolute; border: 1px solid #d6eaf8;
+            border-top: none; z-index: 99; top: 100%; left: 0; right: 0;
+            background-color: white; max-height: 200px; overflow-y: auto;
+        }
+
+        .autocomplete-items div {
+            padding: 10px; cursor: pointer; border-bottom: 1px solid #fce7f3;
+        }
+
+        .autocomplete-items div:hover { background-color: #fdf2f8; }
 
         #message { font-weight: bold; font-size: 1.2em; margin-top: 20px; color: #5dade2; }
     </style>
@@ -74,10 +105,9 @@
         </div>
 
         <div class="search-container">
-            <select id="songSelect">
-                <option value="">Search for a song...</option>
-            </select>
+            <input type="text" id="song-input" placeholder="Search for a song..." autocomplete="off">
             <button id="guessBtn">Submit</button>
+            <div id="autocomplete-list" class="autocomplete-items"></div>
         </div>
 
         <p id="message"></p>
@@ -150,6 +180,7 @@
         const playBtn = document.getElementById('playBtn');
         const skipBtn = document.getElementById('skipBtn');
         const guessBtn = document.getElementById('guessBtn');
+        const songInput = document.getElementById('song-input');
         const select = document.getElementById('songSelect');
         const progress = document.getElementById('progress');
         const guessesEl = document.querySelectorAll('.guess-box');
@@ -209,11 +240,24 @@
             "vampire",
         ].sort((a, b) => a.localeCompare(b));
 
-        allSongs.forEach(name => {
-            const opt = document.createElement('option');
-            opt.value = name;
-            opt.textContent = name;
-            select.appendChild(opt);
+        const input = document.getElementById("song-input");
+        const list = document.getElementById("autocomplete-list");
+        input.addEventListener("input", function() {
+            list.innerHTML = "";
+            const val = this.value.toLowerCase();
+            if (!val) return;
+
+            const filtered = allSongs.filter(song => song.toLowerCase().includes(val));
+
+            filtered.forEach(song => {
+                const div = document.createElement("div");
+                div.innerText = song;
+                div.onclick = () => {
+                    input.value = song;
+                    list.innerHTML = ""; // Close dropdown
+                };
+                list.appendChild(div);
+            });
         });
 
         // YouTube IFrame API ready callback
@@ -293,7 +337,7 @@
         });
 
         function handleGuess(guess) {
-            if (currentAttempt >= 6) return;
+            if (currentAttempt >= 6 || gameWon) return;
 
             if (guess.toLowerCase().trim() === answer.toLowerCase().trim()) {
                 guessesEl[currentAttempt].innerText = guess;
@@ -323,16 +367,18 @@
         skipBtn.addEventListener('click', () => handleGuess("Skipped"));
 
         guessBtn.addEventListener('click', () => {
-            if (select.value) {
-                handleGuess(select.value);
-                select.value = "";
+            const guess = songInput.value;
+            if (guess) {
+                handleGuess(guess);
+                songInput.value = ""; // Clear input after submission
+                list.innerHTML = "";   // Clear dropdown
             }
         });
 
         function endGame(won) {
             skipBtn.disabled = true;
             guessBtn.disabled = true;
-            select.disabled = true;
+            songInput.disabled = true;
             
             // Always trigger playback on game end
             player.seekTo(startAt);
