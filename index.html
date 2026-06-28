@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livdle - Olivia Rodrigo Music Game</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; background-color: #f3e8ff; color: #333; }
+        .container { max-width: 500px; margin: 40px auto; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: #6b21a8; font-style: italic; margin-bottom: 5px; }
+        .subtitle { color: #9333ea; font-size: 0.9em; margin-bottom: 25px; }
+
+        .guesses { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+        .guess-box { border: 2px solid #e9d5ff; padding: 12px; border-radius: 6px; height: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center;}
+
+        .progress-bar { width: 100%; height: 20px; background-color: #e9d5ff; border-radius: 10px; overflow: hidden; position: relative; margin-bottom: 20px; }
+        .progress-fill { height: 100%; background-color: #9333ea; width: 0%; pointer-events: none;}
+        .marker { border-left: 2px solid white; height: 100%; position: absolute; top: 0; }
+
+        .controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        button { background-color: #9333ea; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1em; transition: 0.2s;}
+        button:hover { background-color: #7e22ce; }
+        button:disabled { background-color: #d8b4fe; cursor: not-allowed; }
+
+        .search-container { display: flex; gap: 10px; overflow: hidden; }
+        select { flex: 1 1 0; min-width: 0; padding: 12px; border: 2px solid #e9d5ff; border-radius: 6px; font-size: 1em; outline: none; }
+        select:focus { border-color: #9333ea; }
+
+        #message { font-weight: bold; font-size: 1.2em; margin-top: 20px; color: #6b21a8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Livdle</h1>
+        <p class="subtitle">Guess Olivia's song!</p>
+
+        <div class="guesses" id="guesses">
+            <div class="guess-box"></div>
+            <div class="guess-box"></div>
+            <div class="guess-box"></div>
+            <div class="guess-box"></div>
+            <div class="guess-box"></div>
+            <div class="guess-box"></div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+            <!-- Markers at 2, 4, 6, 8, 10s out of 12s total (equal 2s intervals) -->
+            <div class="marker" style="left: 16.67%"></div>
+            <div class="marker" style="left: 33.33%"></div>
+            <div class="marker" style="left: 50%"></div>
+            <div class="marker" style="left: 66.67%"></div>
+            <div class="marker" style="left: 83.33%"></div>
+        </div>
+
+        <div class="controls">
+            <button id="playBtn" disabled>Loading Audio...</button>
+            <button id="skipBtn">Skip</button>
+        </div>
+
+        <div class="search-container">
+            <select id="songSelect">
+                <option value="">Search for a song...</option>
+            </select>
+            <button id="guessBtn">Submit</button>
+        </div>
+
+        <p id="message"></p>
+    </div>
+
+
+
+    <div id="yt-player" style="position:absolute;left:-999px;width:1px;height:1px;"></div>
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <script>
+        const intervals = [2, 4, 6, 8, 10, 12];
+        let currentAttempt = 0;
+        let isPlaying = false;
+        let gameWon = false;
+        let player = null;
+        let pollInterval = null;
+
+        // --- Daily song rotation ---
+        // Each entry needs a name (must match allSongs) and a videoId from YouTube.
+        // Day 0 = June 28 2026, Day 1 = June 29, etc.
+        const dailySongs = [
+            { name: "good 4 u",                        videoId: "gNi_6U5Pm_o", startAt: 16 },
+            { name: "drivers license",                 videoId: "ZmDBbnmKpqQ", startAt: 5 },
+            { name: "vampire",                         videoId: "" },
+            { name: "traitor",                         videoId: "" },
+            { name: "deja vu",                         videoId: "" },
+            { name: "brutal",                          videoId: "" },
+            { name: "lacy",                            videoId: "" },
+            { name: "bad idea right?",                 videoId: "" },
+            { name: "get him back!",                   videoId: "" },
+            { name: "jealousy, jealousy",              videoId: "" },
+            { name: "favorite crime",                  videoId: "" },
+            { name: "happier",                         videoId: "" },
+            { name: "hope ur ok",                      videoId: "" },
+            { name: "enough for you",                  videoId: "" },
+            { name: "1 step forward, 3 steps back",    videoId: "" },
+            { name: "teenage dream",                   videoId: "" },
+            { name: "making the bed",                  videoId: "" },
+            { name: "logical",                         videoId: "" },
+            { name: "all-american bitch",              videoId: "" },
+            { name: "love is embarrassing",            videoId: "" },
+            { name: "the grudge",                      videoId: "" },
+            { name: "pretty isn't pretty",             videoId: "" },
+            { name: "ballad of a homeschooled girl",   videoId: "" },
+            { name: "so american",                     videoId: "" },
+            { name: "girl i've always been",           videoId: "" },
+            { name: "obsessed",                        videoId: "" },
+            { name: "drop dead",                       videoId: "" },
+            { name: "begged",                          videoId: "" },
+            { name: "honeybee",                        videoId: "" },
+            { name: "stranger",                        videoId: "" },
+            { name: "scared of my guitar",             videoId: "" },
+            { name: "less",                            videoId: "" },
+            { name: "my way",                          videoId: "" },
+            { name: "purple",                          videoId: "" },
+            { name: "cigarette smoke",                 videoId: "" },
+            { name: "maggots for brains",              videoId: "" },
+            { name: "stupid song",                     videoId: "" },
+            { name: "expectations",                    videoId: "" },
+            { name: "the cure",                        videoId: "" },
+            { name: "u + me = <3",                     videoId: "" },
+            { name: "All I Want",                      videoId: "" },
+            { name: "Granted",                         videoId: "" },
+            { name: "River",                           videoId: "" },
+            { name: "The Rose Song",                   videoId: "" },
+            { name: "The Best Part",                   videoId: "" },
+            { name: "Out of the Old",                  videoId: "" },
+            { name: "Start of Something New (Nini Version)", videoId: "" },
+            { name: "I Think I Kinda, You Know (Nini Version)", videoId: "" },
+            { name: "Can't Catch Me Now (from The Hunger Games: The Ballad of Songbirds & Snakes)", videoId: "" },
+        ];
+
+        const startDate = new Date("2026-06-28T00:00:00");
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayIndex = Math.floor((today - startDate) / 86400000) % dailySongs.length;
+        const todaySong = dailySongs[Math.max(0, todayIndex)];
+        const answer = todaySong.name;
+        const videoId = todaySong.videoId;
+        const startAt = todaySong.startAt || 0;
+
+        const playBtn = document.getElementById('playBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        const guessBtn = document.getElementById('guessBtn');
+        const select = document.getElementById('songSelect');
+        const progress = document.getElementById('progress');
+        const guessesEl = document.querySelectorAll('.guess-box');
+        const messageEl = document.getElementById('message');
+
+        // --- Curated song list ---
+        const allSongs = [
+            "1 step forward, 3 steps back",
+            "All I Want",
+            "Can't Catch Me Now (from The Hunger Games: The Ballad of Songbirds & Snakes)",
+            "Granted",
+            "I Think I Kinda, You Know (Nini Version)",
+            "Out of the Old",
+            "River",
+            "Start of Something New (Nini Version)",
+            "The Best Part",
+            "The Rose Song",
+            "YAC Alma Mater (Nini Version)",
+            "all-american bitch",
+            "bad idea right?",
+            "ballad of a homeschooled girl",
+            "begged",
+            "brutal",
+            "cigarette smoke",
+            "deja vu",
+            "drivers license",
+            "drop dead",
+            "enough for you",
+            "expectations",
+            "favorite crime",
+            "get him back!",
+            "girl i've always been",
+            "good 4 u",
+            "happier",
+            "honeybee",
+            "hope ur ok",
+            "jealousy, jealousy",
+            "lacy",
+            "less",
+            "logical",
+            "love is embarrassing",
+            "maggots for brains",
+            "making the bed",
+            "my way",
+            "obsessed",
+            "pretty isn't pretty",
+            "purple",
+            "scared of my guitar",
+            "so american",
+            "stranger",
+            "stupid song",
+            "teenage dream",
+            "the cure",
+            "the grudge",
+            "traitor",
+            "u + me = <3",
+            "vampire",
+        ].sort((a, b) => a.localeCompare(b));
+
+        allSongs.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        });
+
+        // YouTube IFrame API ready callback
+        function onYouTubeIframeAPIReady() {
+            if (!videoId) {
+                messageEl.innerText = "No video ID set for today's song.";
+                return;
+            }
+            player = new YT.Player('yt-player', {
+                width: '1',
+                height: '1',
+                videoId: videoId,
+                playerVars: {
+                    autoplay: 0,
+                    controls: 0,
+                    disablekb: 1,
+                    fs: 0,
+                    iv_load_policy: 3,
+                    modestbranding: 1,
+                    rel: 0,
+                },
+                events: {
+                    onReady: () => {
+                        player.seekTo(startAt);
+                        playBtn.disabled = false;
+                        playBtn.innerText = "Play Audio";
+                    },
+                    onStateChange: (e) => {
+                        // If YouTube auto-advances or ends unexpectedly, reset
+                        if (e.data === YT.PlayerState.ENDED) {
+                            stopPlayback();
+                        }
+                    }
+                }
+            });
+        }
+
+        function startPolling() {
+            stopPolling();
+            pollInterval = setInterval(() => {
+                if (!player) return;
+                const currentSec = player.getCurrentTime() - startAt;
+                const maxSec = gameWon ? intervals[intervals.length - 1] : intervals[currentAttempt];
+                const percent = (currentSec / intervals[intervals.length - 1]) * 100;
+                progress.style.width = percent + '%';
+
+                if (currentSec >= maxSec) {
+                    stopPlayback();
+                }
+            }, 50);
+        }
+
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+
+        function stopPlayback() {
+            stopPolling();
+            player.pauseVideo();
+            player.seekTo(startAt);
+            isPlaying = false;
+            playBtn.innerText = "Play Audio";
+            progress.style.width = '0%';
+        }
+
+        playBtn.addEventListener('click', () => {
+            if (!isPlaying) {
+                player.seekTo(startAt);
+                player.playVideo();
+                isPlaying = true;
+                playBtn.innerText = "Playing...";
+                startPolling();
+            }
+        });
+
+        function handleGuess(guess) {
+            if (currentAttempt >= 6) return;
+
+            if (guess.toLowerCase().trim() === answer.toLowerCase().trim()) {
+                guessesEl[currentAttempt].innerText = guess + " - ✅";
+                guessesEl[currentAttempt].style.backgroundColor = "#dcfce3";
+                guessesEl[currentAttempt].style.borderColor = "#4ade80";
+                endGame(true);
+            } else {
+                guessesEl[currentAttempt].innerText = guess === "Skipped" ? "Skipped" : guess + " - ❌";
+                currentAttempt++;
+                if (currentAttempt >= 6) {
+                    endGame(false);
+                } else {
+                    // Auto-play after skip
+                    player.seekTo(startAt);
+                    player.playVideo();
+                    isPlaying = true;
+                    playBtn.innerText = "Playing...";
+                    startPolling();
+                }
+            }
+        }
+
+        skipBtn.addEventListener('click', () => handleGuess("Skipped"));
+
+        guessBtn.addEventListener('click', () => {
+            if (select.value) {
+                handleGuess(select.value);
+                select.value = "";
+            }
+        });
+
+        function endGame(won) {
+            skipBtn.disabled = true;
+            guessBtn.disabled = true;
+            select.disabled = true;
+            if (won) {
+                gameWon = true;
+                player.seekTo(startAt);
+                player.playVideo();
+                isPlaying = true;
+                playBtn.innerText = "Playing...";
+                startPolling();
+            } else {
+                playBtn.disabled = true;
+                stopPlayback();
+            }
+            messageEl.innerText = won
+                ? "You got it! 💜"
+                : "Game Over! The song was '" + answer + "'";
+        }
+    </script>
+
+    <!-- DEBUG -->
+        <div style="text-align:center;margin-top:16px;font-size:0.85em;color:#aaa;">
+            <select id="debugSelect"></select>
+            <button onclick="debugPlay()">Preview</button>
+        </div>
+        <script>
+            dailySongs.forEach((s, i) => {
+                const o = document.createElement('option');
+                o.value = i;
+                o.textContent = `Day ${i}: ${s.name}`;
+                document.getElementById('debugSelect').appendChild(o);
+            });
+            function debugPlay() {
+                const i = parseInt(document.getElementById('debugSelect').value);
+                const s = dailySongs[i];
+                if (!s.videoId) { alert('No video ID for this song'); return; }
+                player.loadVideoById({ videoId: s.videoId, startSeconds: s.startAt || 0 });
+            }
+        </script>
+    <!-- END DEBUG -->
+</body>
+</html>
