@@ -3,36 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Livdle - Olivia Rodrigo Music Game</title>
+    <title>Livdle</title>
     <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; background-color: #f3e8ff; color: #333; }
-        .container { max-width: 500px; margin: 40px auto; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h1 { color: #6b21a8; font-style: italic; margin-bottom: 5px; }
-        .subtitle { color: #9333ea; font-size: 0.9em; margin-bottom: 25px; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; background-color: #f0f7fa; color: #333; }
+        .container { max-width: 500px; margin: 40px auto; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
 
+        /* Title remains Blue */
+        h1 { color: #5dade2; font-style: italic; margin-bottom: 5px; }
+        .subtitle { color: #5dade2; font-size: 0.9em; margin-bottom: 25px; }
+
+        /* Guess tiles are now Pink-themed */
         .guesses { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
-        .guess-box { border: 2px solid #e9d5ff; padding: 12px; border-radius: 6px; height: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center;}
+        .guess-box { 
+            border: 2px solid #fce7f3; /* Light pink border */
+            padding: 12px; 
+            border-radius: 6px; 
+            height: 20px; 
+            font-weight: bold; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background-color: #fdf2f8; /* Very light pink background */
+        }
 
-        .progress-bar { width: 100%; height: 20px; background-color: #e9d5ff; border-radius: 10px; overflow: hidden; position: relative; margin-bottom: 20px; }
-        .progress-fill { height: 100%; background-color: #9333ea; width: 0%; pointer-events: none;}
+        /* Progress bar is now Pink */
+        .progress-bar { width: 100%; height: 20px; background-color: #fce7f3; border-radius: 10px; overflow: hidden; position: relative; margin-bottom: 20px; }
+        .progress-fill { height: 100%; background-color: #f2b6d5; width: 0%; pointer-events: none;}
         .marker { border-left: 2px solid white; height: 100%; position: absolute; top: 0; }
 
+        /* Buttons/Controls remain Blue */
         .controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
-        button { background-color: #9333ea; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1em; transition: 0.2s;}
-        button:hover { background-color: #7e22ce; }
-        button:disabled { background-color: #d8b4fe; cursor: not-allowed; }
+        button { background-color: #5dade2; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1em; transition: 0.2s;}
+        button:hover { background-color: #3498db; }
+        button:disabled { background-color: #aed6f1; cursor: not-allowed; }
 
         .search-container { display: flex; gap: 10px; overflow: hidden; }
-        select { flex: 1 1 0; min-width: 0; padding: 12px; border: 2px solid #e9d5ff; border-radius: 6px; font-size: 1em; outline: none; }
-        select:focus { border-color: #9333ea; }
+        select { flex: 1 1 0; min-width: 0; padding: 12px; border: 2px solid #d6eaf8; border-radius: 6px; font-size: 1em; outline: none; }
+        select:focus { border-color: #5dade2; }
 
-        #message { font-weight: bold; font-size: 1.2em; margin-top: 20px; color: #6b21a8; }
+        #message { font-weight: bold; font-size: 1.2em; margin-top: 20px; color: #5dade2; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Livdle</h1>
-        <p class="subtitle">Guess Olivia's song!</p>
+        <p class="subtitle">Guess the Olivia song</p>
 
         <div class="guesses" id="guesses">
             <div class="guess-box"></div>
@@ -45,7 +60,6 @@
 
         <div class="progress-bar">
             <div class="progress-fill" id="progress"></div>
-            <!-- Markers at 2, 4, 6, 8, 10s out of 12s total (equal 2s intervals) -->
             <div class="marker" style="left: 16.67%"></div>
             <div class="marker" style="left: 33.33%"></div>
             <div class="marker" style="left: 50%"></div>
@@ -67,9 +81,7 @@
 
         <p id="message"></p>
     </div>
-
-
-
+    
     <div id="yt-player" style="position:absolute;left:-999px;width:1px;height:1px;"></div>
     <script src="https://www.youtube.com/iframe_api"></script>
 
@@ -87,53 +99,42 @@
         const dailySongs = [
             { name: "good 4 u",                        videoId: "gNi_6U5Pm_o", startAt: 16 },
             { name: "drivers license",                 videoId: "ZmDBbnmKpqQ", startAt: 5 },
-            { name: "vampire",                         videoId: "" },
-            { name: "traitor",                         videoId: "" },
-            { name: "deja vu",                         videoId: "" },
-            { name: "brutal",                          videoId: "" },
-            { name: "lacy",                            videoId: "" },
-            { name: "bad idea right?",                 videoId: "" },
-            { name: "get him back!",                   videoId: "" },
-            { name: "jealousy, jealousy",              videoId: "" },
-            { name: "favorite crime",                  videoId: "" },
-            { name: "happier",                         videoId: "" },
-            { name: "hope ur ok",                      videoId: "" },
-            { name: "enough for you",                  videoId: "" },
-            { name: "1 step forward, 3 steps back",    videoId: "" },
-            { name: "teenage dream",                   videoId: "" },
-            { name: "making the bed",                  videoId: "" },
-            { name: "logical",                         videoId: "" },
-            { name: "all-american bitch",              videoId: "" },
-            { name: "love is embarrassing",            videoId: "" },
-            { name: "the grudge",                      videoId: "" },
-            { name: "pretty isn't pretty",             videoId: "" },
-            { name: "ballad of a homeschooled girl",   videoId: "" },
-            { name: "so american",                     videoId: "" },
-            { name: "girl i've always been",           videoId: "" },
-            { name: "obsessed",                        videoId: "" },
-            { name: "drop dead",                       videoId: "" },
-            { name: "begged",                          videoId: "" },
-            { name: "honeybee",                        videoId: "" },
-            { name: "stranger",                        videoId: "" },
-            { name: "scared of my guitar",             videoId: "" },
-            { name: "less",                            videoId: "" },
-            { name: "my way",                          videoId: "" },
-            { name: "purple",                          videoId: "" },
-            { name: "cigarette smoke",                 videoId: "" },
-            { name: "maggots for brains",              videoId: "" },
-            { name: "stupid song",                     videoId: "" },
-            { name: "expectations",                    videoId: "" },
-            { name: "the cure",                        videoId: "" },
-            { name: "u + me = <3",                     videoId: "" },
-            { name: "All I Want",                      videoId: "" },
-            { name: "Granted",                         videoId: "" },
-            { name: "River",                           videoId: "" },
-            { name: "The Rose Song",                   videoId: "" },
-            { name: "The Best Part",                   videoId: "" },
-            { name: "Out of the Old",                  videoId: "" },
-            { name: "Start of Something New (Nini Version)", videoId: "" },
-            { name: "I Think I Kinda, You Know (Nini Version)", videoId: "" },
-            { name: "Can't Catch Me Now (from The Hunger Games: The Ballad of Songbirds & Snakes)", videoId: "" },
+            { name: "maggots for brains",              videoId: "ak7nZ5J2E5k", startAt: 0 },
+            { name: "pretty isn't pretty",             videoId: "G0R7Z2A0XeY", startAt: 0 },
+            { name: "ballad of a homeschooled girl",   videoId: "obSpLSnJ-wI", startAt: 0 },
+            { name: "so american",                     videoId: "W-PGNyhmSKA", startAt: 0 },
+            { name: "the cure",                        videoId: "UbbrZTfjkdk", startAt: 0 },
+            // { name: "girl i've always been",           videoId: "", startAt: 0 },
+            // { name: "obsessed",                        videoId: "", startAt: 0 },
+            // { name: "drop dead",                       videoId: "", startAt: 0 },
+            // { name: "begged",                          videoId: "", startAt: 0 },
+            // { name: "vampire",                         videoId: "", startAt: 0 },
+            // { name: "traitor",                         videoId: "", startAt: 0 },
+            // { name: "deja vu",                         videoId: "", startAt: 0 },
+            // { name: "brutal",                          videoId: "", startAt: 0 },
+            // { name: "lacy",                            videoId: "", startAt: 0 },
+            // { name: "bad idea right?",                 videoId: "" },
+            // { name: "get him back!",                   videoId: "" },
+            // { name: "jealousy, jealousy",              videoId: "" },
+            // { name: "expectations",                    videoId: "" },
+            // { name: "favorite crime",                  videoId: "" },
+            // { name: "happier",                         videoId: "" },
+            // { name: "hope ur ok",                      videoId: "" },
+            // { name: "enough for you",                  videoId: "" },
+            // { name: "1 step forward, 3 steps back",    videoId: "" },
+            // { name: "teenage dream",                   videoId: "" },
+            // { name: "making the bed",                  videoId: "" },
+            // { name: "logical",                         videoId: "" },
+            // { name: "all-american bitch",              videoId: "" },
+            // { name: "love is embarrassing",            videoId: "" },
+            // { name: "the grudge",                      videoId: "" },
+            // { name: "honeybee",                        videoId: "" },
+            // { name: "stranger",                        videoId: "" },
+            // { name: "scared of my guitar",             videoId: "" },
+            // { name: "less",                            videoId: "" },
+            // { name: "my way",                          videoId: "" },
+            // { name: "purple",                          videoId: "" },
+            // { name: "cigarette smoke",                 videoId: "" },
         ];
 
         const startDate = new Date("2026-06-28T00:00:00");
@@ -254,7 +255,7 @@
             pollInterval = setInterval(() => {
                 if (!player) return;
                 const currentSec = player.getCurrentTime() - startAt;
-                const maxSec = gameWon ? intervals[intervals.length - 1] : intervals[currentAttempt];
+                const maxSec = (gameWon || currentAttempt >= 6) ? intervals[intervals.length - 1] : intervals[currentAttempt];
                 const percent = (currentSec / intervals[intervals.length - 1]) * 100;
                 progress.style.width = percent + '%';
 
@@ -294,17 +295,21 @@
             if (currentAttempt >= 6) return;
 
             if (guess.toLowerCase().trim() === answer.toLowerCase().trim()) {
-                guessesEl[currentAttempt].innerText = guess + " - ✅";
-                guessesEl[currentAttempt].style.backgroundColor = "#dcfce3";
-                guessesEl[currentAttempt].style.borderColor = "#4ade80";
+                guessesEl[currentAttempt].innerText = guess;
+                // Very light pastel green
+                guessesEl[currentAttempt].style.backgroundColor = "#d4edda";
+                guessesEl[currentAttempt].style.borderColor = "#c3e6cb";
                 endGame(true);
             } else {
-                guessesEl[currentAttempt].innerText = guess === "Skipped" ? "Skipped" : guess + " - ❌";
+                guessesEl[currentAttempt].innerText = guess === "Skipped" ? "Skipped" : guess;
+                // Very light pastel red
+                guessesEl[currentAttempt].style.backgroundColor = "#f8d7da";
+                guessesEl[currentAttempt].style.borderColor = "#f5c6cb";
+                
                 currentAttempt++;
                 if (currentAttempt >= 6) {
                     endGame(false);
                 } else {
-                    // Auto-play after skip
                     player.seekTo(startAt);
                     player.playVideo();
                     isPlaying = true;
@@ -313,7 +318,7 @@
                 }
             }
         }
-
+        
         skipBtn.addEventListener('click', () => handleGuess("Skipped"));
 
         guessBtn.addEventListener('click', () => {
@@ -327,20 +332,23 @@
             skipBtn.disabled = true;
             guessBtn.disabled = true;
             select.disabled = true;
+            
+            // Always trigger playback on game end
+            player.seekTo(startAt);
+            player.playVideo();
+            isPlaying = true;
+            playBtn.innerText = "Playing...";
+            startPolling();
+            
             if (won) {
                 gameWon = true;
-                player.seekTo(startAt);
-                player.playVideo();
-                isPlaying = true;
-                playBtn.innerText = "Playing...";
-                startPolling();
+                messageEl.innerText = "💜💜💜";
             } else {
+                // We set the play button to disabled here if they lost, 
+                // but we still let the song play for them to hear the answer.
                 playBtn.disabled = true;
-                stopPlayback();
+                messageEl.innerText = answer;
             }
-            messageEl.innerText = won
-                ? "You got it! 💜"
-                : "Game Over! The song was '" + answer + "'";
         }
     </script>
 
