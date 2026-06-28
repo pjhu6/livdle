@@ -49,7 +49,7 @@
     <div class="container">
         <h1>Livdle</h1>
         <p class="subtitle">Guess the Olivia song</p>
-
+        <div id="streak-display" style="color: #f2b6d5; font-weight: bold; margin-bottom: 15px; font-size: 0.85em;"></div>
         <div class="guesses" id="guesses">
             <div class="guess-box"></div>
             <div class="guess-box"></div>
@@ -339,6 +339,7 @@
             player.playVideo();
             isPlaying = true;
             playBtn.innerText = "Playing...";
+            updateStreak(won);
             startPolling();
             
             if (won) {
@@ -351,6 +352,52 @@
                 messageEl.innerText = answer;
             }
         }
+
+        function updateStreak(won) {
+            const todayStr = new Date().toDateString();
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toDateString();
+
+            let streakData = JSON.parse(localStorage.getItem('livdleStreak')) || { current: 0, max: 0, lastPlayed: null };
+
+            // Only update stats if they haven't finished a game today
+            if (streakData.lastPlayed !== todayStr) {
+                if (won) {
+                    streakData.current = (streakData.lastPlayed === yesterdayStr) ? streakData.current + 1 : 1;
+                    if (streakData.current > streakData.max) streakData.max = streakData.current;
+                } else {
+                    streakData.current = 0;
+                }
+                streakData.lastPlayed = todayStr;
+                localStorage.setItem('livdleStreak', JSON.stringify(streakData));
+            }
+
+            loadStreakUI();
+        }
+
+        function loadStreakUI() {
+            let streakData = JSON.parse(localStorage.getItem('livdleStreak')) || { current: 0, max: 0, lastPlayed: null };
+            
+            const todayStr = new Date().toDateString();
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toDateString();
+
+            // If they missed both today AND yesterday, reset current streak
+            if (streakData.lastPlayed !== null && streakData.lastPlayed !== todayStr && streakData.lastPlayed !== yesterdayStr) {
+                streakData.current = 0;
+                localStorage.setItem('livdleStreak', JSON.stringify(streakData));
+            }
+
+            const streakEl = document.getElementById('streak-display');
+            if (streakEl) {
+                streakEl.innerText = `Current Streak: ${streakData.current} | Max Streak: ${streakData.max}`;
+            }
+        }
+
+        // Call it once when the page loads
+        loadStreakUI();
     </script>
 
     <!-- DEBUG -->
