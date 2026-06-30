@@ -11,7 +11,23 @@
 
         /* Title remains Blue */
         h1 { color: #5dade2; font-style: italic; margin-bottom: 5px; }
-        .subtitle { color: #5dade2; font-size: 0.9em; margin-bottom: 25px; }
+        .subtitle { color: #5dade2; font-size: 0.9em; margin-bottom: 15px; }
+
+        /* Dropdown Styling */
+        .selector-container { margin-bottom: 25px; }
+        #daySelect {
+            padding: 10px 15px;
+            border: 2px solid #5dade2;
+            border-radius: 6px;
+            background-color: white;
+            color: #333;
+            font-weight: bold;
+            font-size: 0.95em;
+            cursor: pointer;
+            outline: none;
+            transition: 0.2s;
+        }
+        #daySelect:hover { border-color: #3498db; }
 
         /* Guess tiles are now Pink-themed */
         .guesses { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
@@ -80,7 +96,14 @@
     <div class="container">
         <h1>Livdle</h1>
         <p class="subtitle">Guess the Olivia song</p>
+        
+        <div class="selector-container">
+            <label for="daySelect" style="font-weight: bold; color: #5dade2; margin-right: 5px;">Select Day:</label>
+            <select id="daySelect"></select>
+        </div>
+
         <div id="streak-display" style="color: #f2b6d5; font-weight: bold; margin-bottom: 15px; font-size: 0.85em;"></div>
+        
         <div class="guesses" id="guesses">
             <div class="guess-box"></div>
             <div class="guess-box"></div>
@@ -125,66 +148,95 @@
         let pollInterval = null;
 
         // --- Daily song rotation ---
-        // Each entry needs a name (must match allSongs) and a videoId from YouTube.
-        // Day 0 = June 28 2026, Day 1 = June 29, etc.
         const dailySongs = [
-            { name: "good 4 u",                        videoId: "gNi_6U5Pm_o", startAt: 16 },
+            { name: "good 4 u",                     videoId: "gNi_6U5Pm_o", startAt: 16 },
             { name: "drivers license",                 videoId: "ZmDBbnmKpqQ", startAt: 5 },
             { name: "maggots for brains",              videoId: "ak7nZ5J2E5k", startAt: 0 },
             { name: "pretty isn't pretty",             videoId: "G0R7Z2A0XeY", startAt: 0 },
             { name: "ballad of a homeschooled girl",   videoId: "obSpLSnJ-wI", startAt: 0 },
             { name: "so american",                     videoId: "W-PGNyhmSKA", startAt: 0 },
             { name: "the cure",                        videoId: "UbbrZTfjkdk", startAt: 0 },
-            // { name: "girl i've always been",           videoId: "", startAt: 0 },
-            // { name: "obsessed",                        videoId: "", startAt: 0 },
-            // { name: "drop dead",                       videoId: "", startAt: 0 },
-            // { name: "begged",                          videoId: "", startAt: 0 },
-            // { name: "vampire",                         videoId: "", startAt: 0 },
-            // { name: "traitor",                         videoId: "", startAt: 0 },
-            // { name: "deja vu",                         videoId: "", startAt: 0 },
-            // { name: "brutal",                          videoId: "", startAt: 0 },
-            // { name: "lacy",                            videoId: "", startAt: 0 },
-            // { name: "bad idea right?",                 videoId: "" },
-            // { name: "get him back!",                   videoId: "" },
-            // { name: "jealousy, jealousy",              videoId: "" },
-            // { name: "expectations",                    videoId: "" },
-            // { name: "favorite crime",                  videoId: "" },
-            // { name: "happier",                         videoId: "" },
-            // { name: "hope ur ok",                      videoId: "" },
-            // { name: "enough for you",                  videoId: "" },
-            // { name: "1 step forward, 3 steps back",    videoId: "" },
-            // { name: "teenage dream",                   videoId: "" },
-            // { name: "making the bed",                  videoId: "" },
-            // { name: "logical",                         videoId: "" },
-            // { name: "all-american bitch",              videoId: "" },
-            // { name: "love is embarrassing",            videoId: "" },
-            // { name: "the grudge",                      videoId: "" },
-            // { name: "honeybee",                        videoId: "" },
-            // { name: "stranger",                        videoId: "" },
-            // { name: "scared of my guitar",             videoId: "" },
-            // { name: "less",                            videoId: "" },
-            // { name: "my way",                          videoId: "" },
-            // { name: "purple",                          videoId: "" },
-            // { name: "cigarette smoke",                 videoId: "" },
         ];
 
         const startDate = new Date("2026-06-28T00:00:00");
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todayIndex = Math.floor((today - startDate) / 86400000) % dailySongs.length;
-        const todaySong = dailySongs[Math.max(0, todayIndex)];
-        const answer = todaySong.name;
-        const videoId = todaySong.videoId;
-        const startAt = todaySong.startAt || 0;
+        
+        // Dynamic game targets initialized via loadDay()
+        let answer = "";
+        let videoId = "";
+        let startAt = 0;
 
         const playBtn = document.getElementById('playBtn');
         const skipBtn = document.getElementById('skipBtn');
         const guessBtn = document.getElementById('guessBtn');
         const songInput = document.getElementById('song-input');
-        const select = document.getElementById('songSelect');
+        const daySelect = document.getElementById('daySelect');
         const progress = document.getElementById('progress');
         const guessesEl = document.querySelectorAll('.guess-box');
         const messageEl = document.getElementById('message');
+
+        // Populate Dropdown Menus
+        dailySongs.forEach((song, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.textContent = `Day ${index + 1} ${index === todayIndex ? "(Today)" : ""}`;
+            daySelect.appendChild(opt);
+        });
+        daySelect.value = todayIndex;
+
+        // Setup dropdown change listener
+        daySelect.addEventListener('change', (e) => {
+            loadDay(parseInt(e.target.value));
+        });
+
+        // Function to load/reset the game configuration for a selected day
+        function loadDay(index) {
+            if (player && typeof player.pauseVideo === 'function') {
+                stopPlayback();
+            }
+
+            const activeSong = dailySongs[Math.max(0, index)];
+            answer = activeSong.name;
+            videoId = activeSong.videoId;
+            startAt = activeSong.startAt || 0;
+
+            // Reset engine parameters
+            currentAttempt = 0;
+            gameWon = false;
+            isPlaying = false;
+
+            // Clean up UI
+            messageEl.innerText = "";
+            songInput.value = "";
+            songInput.disabled = false;
+            skipBtn.disabled = false;
+            guessBtn.disabled = false;
+            progress.style.width = '0%';
+
+            guessesEl.forEach(box => {
+                box.innerText = "";
+                box.style.backgroundColor = "#fdf2f8";
+                box.style.borderColor = "#fce7f3";
+            });
+
+            // Update Audio Stream Target if Player API exists
+            if (player && typeof player.cueVideoById === 'function') {
+                if (!videoId) {
+                    messageEl.innerText = "No video ID set for this day's song.";
+                    playBtn.disabled = true;
+                    playBtn.innerText = "Unavailable";
+                    return;
+                }
+                player.cueVideoById({
+                    videoId: videoId,
+                    startSeconds: startAt
+                });
+                playBtn.disabled = false;
+                playBtn.innerText = "Play Audio";
+            }
+        }
 
         // --- Curated song list ---
         const allSongs = [
@@ -254,7 +306,7 @@
                 div.innerText = song;
                 div.onclick = () => {
                     input.value = song;
-                    list.innerHTML = ""; // Close dropdown
+                    list.innerHTML = ""; 
                 };
                 list.appendChild(div);
             });
@@ -286,7 +338,6 @@
                         playBtn.innerText = "Play Audio";
                     },
                     onStateChange: (e) => {
-                        // If YouTube auto-advances or ends unexpectedly, reset
                         if (e.data === YT.PlayerState.ENDED) {
                             stopPlayback();
                         }
@@ -341,13 +392,11 @@
 
             if (guess.toLowerCase().trim() === answer.toLowerCase().trim()) {
                 guessesEl[currentAttempt].innerText = guess;
-                // Very light pastel green
                 guessesEl[currentAttempt].style.backgroundColor = "#d4edda";
                 guessesEl[currentAttempt].style.borderColor = "#c3e6cb";
                 endGame(true);
             } else {
                 guessesEl[currentAttempt].innerText = guess === "Skipped" ? "Skipped" : guess;
-                // Very light pastel red
                 guessesEl[currentAttempt].style.backgroundColor = "#f8d7da";
                 guessesEl[currentAttempt].style.borderColor = "#f5c6cb";
                 
@@ -370,8 +419,8 @@
             const guess = songInput.value;
             if (guess) {
                 handleGuess(guess);
-                songInput.value = ""; // Clear input after submission
-                list.innerHTML = "";   // Clear dropdown
+                songInput.value = ""; 
+                list.innerHTML = "";   
             }
         });
 
@@ -380,7 +429,6 @@
             guessBtn.disabled = true;
             songInput.disabled = true;
             
-            // Always trigger playback on game end
             player.seekTo(startAt);
             player.playVideo();
             isPlaying = true;
@@ -392,8 +440,6 @@
                 gameWon = true;
                 messageEl.innerText = "💜💜💜";
             } else {
-                // We set the play button to disabled here if they lost, 
-                // but we still let the song play for them to hear the answer.
                 playBtn.disabled = true;
                 messageEl.innerText = answer;
             }
@@ -407,7 +453,6 @@
 
             let streakData = JSON.parse(localStorage.getItem('livdleStreak')) || { current: 0, max: 0, lastPlayed: null };
 
-            // Only update stats if they haven't finished a game today
             if (streakData.lastPlayed !== todayStr) {
                 if (won) {
                     streakData.current = (streakData.lastPlayed === yesterdayStr) ? streakData.current + 1 : 1;
@@ -430,7 +475,6 @@
             yesterday.setDate(yesterday.getDate() - 1);
             const yesterdayStr = yesterday.toDateString();
 
-            // If they missed both today AND yesterday, reset current streak
             if (streakData.lastPlayed !== null && streakData.lastPlayed !== todayStr && streakData.lastPlayed !== yesterdayStr) {
                 streakData.current = 0;
                 localStorage.setItem('livdleStreak', JSON.stringify(streakData));
@@ -442,29 +486,9 @@
             }
         }
 
-        // Call it once when the page loads
+        // Initialize game default targets instantly 
+        loadDay(todayIndex);
         loadStreakUI();
     </script>
-
-    <!-- DEBUG -->
-        <!-- <div style="text-align:center;margin-top:16px;font-size:0.85em;color:#aaa;">
-            <select id="debugSelect"></select>
-            <button onclick="debugPlay()">Preview</button>
-        </div>
-        <script>
-            dailySongs.forEach((s, i) => {
-                const o = document.createElement('option');
-                o.value = i;
-                o.textContent = `Day ${i}: ${s.name}`;
-                document.getElementById('debugSelect').appendChild(o);
-            });
-            function debugPlay() {
-                const i = parseInt(document.getElementById('debugSelect').value);
-                const s = dailySongs[i];
-                if (!s.videoId) { alert('No video ID for this song'); return; }
-                player.loadVideoById({ videoId: s.videoId, startSeconds: s.startAt || 0 });
-            }
-        </script> -->
-    <!-- END DEBUG -->
 </body>
 </html>
